@@ -1,6 +1,5 @@
 import numpy as np
 from chip import Chip
-import matplotlib.pyplot as plt
 
 MAX_BREAKPOINTS = 10
 
@@ -104,12 +103,6 @@ np.set_printoptions(threshold=np.nan)
 emu = Chip()
 debugger = Debugger(emu)
 
-def test():
-    x = np.linspace(0,10)
-    y = np.sin(x)
-    plt.plot(x, y)
-    plt.show()
-        
 def main():
     filename = "roms/Tetris [Fran Dachille, 1991].ch8"
     emu.load(filename)
@@ -118,4 +111,4 @@ def main():
     debugger.repl()
 
 if __name__ == '__main__':
-    test() #main()
+    main()

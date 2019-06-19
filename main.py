@@ -62,7 +62,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('filename', help='Location of CHIP-8 ROM')
 parser.add_argument('-d', '--debug', help='debug mode', action='store_true')
 args = parser.parse_args()
-DEBUG = args.debug
+Chip.DEBUG = args.debug
 
 pyglet.clock.schedule_interval(update, 1/20.)
 chip.load(args.filename)

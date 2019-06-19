@@ -82,7 +82,8 @@ class Chip(object):
         opcode |= self.memory[self.pc + 1]
 
         if Chip.DEBUG:
-            chip._print_instruction()
+            self._print_instruction()
+            input()
         self._process_opcode(opcode)
         self.pc += 2
         self._process_output()
