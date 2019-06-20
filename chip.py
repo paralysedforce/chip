@@ -56,6 +56,7 @@ class Chip(object):
 
         # Additional flags for convenience
         self.should_draw = False
+        self.wait_for_input = False
         self.has_exit = False
 
 # Loading data into memory
@@ -109,7 +110,7 @@ class Chip(object):
         while not self.should_draw:
             self.dispatch_events()
             self.cycle()
-            if self.has_exit:
+            if self.has_exit or self.wait_for_input:
                 break
 
     def dispatch_events(self):
@@ -438,8 +439,10 @@ class Chip(object):
         elif mode == 'KEY':
             if 1 not in self.key_inputs:
                 self.pc -= 2
+                self.wait_for_input = True
             else:
                 self.registers[src] = np.argmax(self.key_inputs)
+                self.wait_for_input = False
 
         else:
             raise ValueError('Invalid Instruction Mode')
