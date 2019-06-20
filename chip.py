@@ -81,9 +81,11 @@ class Chip(object):
         opcode = self.memory[self.pc] << 8
         opcode |= self.memory[self.pc + 1]
 
+
         if Chip.DEBUG:
             self._print_instruction()
-            input()
+            pdb.set_trace()
+
         self._process_opcode(opcode)
         self.pc += 2
         self._process_output()
@@ -252,7 +254,7 @@ class Chip(object):
     @instruction
     def _call(self, addr):
         self.stack.append(self.pc)
-        self.pc = addr
+        self.pc = addr - 2
 
     @instruction
     def _se(self, val1, val2, mode=None):
@@ -360,10 +362,11 @@ class Chip(object):
                 # Because pyglet considers (0, 0) as bottom-left
                 y_coordinate = Chip.SCREEN_HEIGHT - y_coordinate - 1
 
-                if self.display_buffer[x_coordinate, y_coordinate]:
+                sprite_val = is_bit_set(sprite_byte, x_offset)
+
+                if self.display_buffer[x_coordinate, y_coordinate] and sprite_val:
                     flag_val = True
 
-                sprite_val = is_bit_set(sprite_byte, x_offset)
                 self.display_buffer[x_coordinate, y_coordinate] ^= sprite_val
 
         self._set_flag(flag_val)

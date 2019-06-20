@@ -1,5 +1,7 @@
 import numpy as np
 from chip import Chip
+import pdb
+import re
 
 MAX_BREAKPOINTS = 10
 
@@ -39,9 +41,26 @@ class Debugger(object):
             self.emu.cycle()
         emu._print_instruction()
 
-    def display(self, component):
+    def display(self, component, specification):
         if component == 'm':
-            print(self.emu.memory)
+            if specification is None:
+                print(self.emu.memory)
+
+            elif specification == 'i':
+                print(self.emu.memory[self.emu.index])
+
+            elif '+' in specification:
+                start, length = specification.split('+')
+                base = 16 if 'x' in start else 10
+
+                start, length = int(start, base), int(length, base)
+                print(self.emu.memory[start:start+length])
+
+            elif bool(re.search(specification, '\d+')):
+                print(self.emu.memory[int(specification)])
+            
+            elif bool(re.search(specification, '0x\d+')):
+                print(self.emu.memory[int(specification, 16)])
 
         if component == 'r':
             print(self.emu.registers)
@@ -82,13 +101,16 @@ class Debugger(object):
                 self.remove_breakpoint(cmd[1])
 
             elif cmd[0] == 'p':
-                self.display(cmd[1])
+                if len(cmd) > 2:
+                    self.display(cmd[1], cmd[2])
+                else:
+                    self.display(cmd[1], None)
 
             elif cmd[0] == 'c':
                 self.continue_to_breakpoint()
 
             elif cmd[0] == 'd':
-                draw()
+                pdb.set_trace()
 
         except IndexError:
             print("Invalid command")
@@ -104,7 +126,7 @@ emu = Chip()
 debugger = Debugger(emu)
 
 def main():
-    filename = "roms/Tetris [Fran Dachille, 1991].ch8"
+    filename = "roms/test_opcode.ch8"
     emu.load(filename)
     print("Debugging " + filename)
 
