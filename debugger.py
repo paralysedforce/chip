@@ -1,45 +1,60 @@
 import numpy as np
-from chip import Chip
 import pdb
+import argparse
+from chip import Chip
 import re
 
-MAX_BREAKPOINTS = 10
-
 class Debugger(object):
-    recognized_commands = 'sbrpc'
+    recognized_commands = 'sbrpchqdf'
 
     def __init__(self, emu):
         self.emu = emu
-        self.breakpoints = np.zeros(MAX_BREAKPOINTS)
+        self.breakpoints = {}
         self.last_command = None
+        self.last_breakpoint = 0
 
     def set_breakpoint(self, line):
-        for i in range(MAX_BREAKPOINTS):
-            if self.breakpoints[i] == 0:
-                try:
-                    self.breakpoints[i] = int(line,16)
-                except ValueError:
-                    print("Invalid line number.")
-                    return
-                print("Breakpoint " + str(i) + " set at " + str(line))
-                return
-        print("Breakpoint not set. Delete an existing breakpoint to continue.")
+        self.last_breakpoint += 1
+        self.breakpoints[self.last_breakpoint] = line
+        print("Breakpoint {num} set at line {line}".format(
+            num=self.last_breakpoint,
+            line=line))
 
     def remove_breakpoint(self, i):
-        try:
-            i = int(i)
-            if self.breakpoints[i]:
-                self.breakpoints[i] = 0
-        except IndexError:
-            print("Enter a number between 0 and " + MAX_BREAKPOINTS)
+        if i in self.breakpoints:
+            del self.breakpoints[i]
+            print("Breakpoint {0} deleted".format(i))
+        else:
+            print("No breakpoint found")
 
     def continue_to_breakpoint(self):
-        if all(self.breakpoints == 0):
-            print("No breakpoints. Cannot continue.")
-            return
         while self.emu.pc not in self.breakpoints:
             self.emu.cycle()
+            self.wait_for_input()
         emu._print_instruction()
+
+    def wait_for_input(self):
+        while self.emu.wait_for_input:
+            print("Enter a key between 0 and 15")
+            key = input('>')
+            base = 16 if 'x' in key else 10
+            try:
+                key = int(key, base)
+                self.emu.key_inputs[key] = 1
+                self.emu.wait_for_input = False
+            except:
+                print("Did not understand")
+            
+
+    def continue_to_frame(self):
+        while self.emu.memory[self.emu.pc] >> 4 != 0xd:
+            self.emu.cycle()
+            self.wait_for_input()
+
+        # Cycle past the drw 
+        self.emu.cycle()
+        self.draw_display_buffer()
+
 
     def display(self, component, specification):
         if component == 'm':
@@ -63,7 +78,11 @@ class Debugger(object):
                 print(self.emu.memory[int(specification, 16)])
 
         if component == 'r':
-            print(self.emu.registers)
+            if specification:
+                base = 16 if 'x' in specification else 10
+                print(self.emu.registers[int(specification, base)])
+            else:
+                print(self.emu.registers)
 
         if component == 'i':
             print(self.emu.index)
@@ -71,9 +90,13 @@ class Debugger(object):
         if component == 's':
             print(self.emu.stack)
 
-        if component == 'd':
-            print(self.emu.display_buffer)
+        if component == 'k':
+            print(self.emu.key_inputs)
 
+        if component == 'b':
+            print("Breakpoints:")
+            for i in self.breakpoints:
+                print("{num} - {line}".format(i, self.breakpoints[i]))
 
     def repl(self):
         while True:
@@ -83,11 +106,45 @@ class Debugger(object):
                     self.process_command(*cmd)
                     self.last_command = cmd
 
-                if cmd[0] == 'q':
-                   return 
+                    if cmd[0] == 'q':
+                       return 
 
             except IndexError:
-                self.process_command(*self.last_command)
+                if self.last_command: 
+                    self.process_command(*self.last_command)
+
+    def draw_display_buffer(self):
+        rows = "-" * (Chip.SCREEN_WIDTH + 2)+"\n"
+        for y in range(Chip.SCREEN_HEIGHT - 1, -1, -1):
+            row = "|"
+            for x in range(Chip.SCREEN_WIDTH):
+                if self.emu.display_buffer[x, y]: row += "▓"
+                else: row += "░"
+            row += "|\n"
+            rows += row
+        rows += "-" * (Chip.SCREEN_WIDTH + 2)
+        print(rows)
+
+    def print_help(self):
+        print("\n".join([
+                "h                  - Help",
+                "q                  - Quit from debugger",
+                "s                  - Step forward one instruction",
+                "b [line]           - Set breakpoint at line",
+                "r [breakpoint num] - Remove breakpoint",
+                "c                  - Continue to next breakpoint",
+                "f                  - Continue to next frame update",
+                "d                  - Draw the display buffer",
+                "p m                - Print memory",
+                "p m [start]+[len]  - Print memory from starting address",
+                "p m i              - Print memory at index",
+                "p r [reg]          - Print a single register",
+                "p r                - Print all registers",
+                "p i                - Print index register",
+                "p s                - Print stack",
+                "p b                - Print current breakpoints",
+                "p k                - Print key buffer"
+            ]))
 
     def process_command(self, *cmd):
         try:
@@ -110,7 +167,13 @@ class Debugger(object):
                 self.continue_to_breakpoint()
 
             elif cmd[0] == 'd':
-                pdb.set_trace()
+                self.draw_display_buffer()
+
+            elif cmd[0] == 'h':
+                self.print_help()
+
+            elif cmd[0] == 'f':
+                self.continue_to_frame()
 
         except IndexError:
             print("Invalid command")
@@ -126,9 +189,14 @@ emu = Chip()
 debugger = Debugger(emu)
 
 def main():
-    filename = "roms/test_opcode.ch8"
+    parser = argparse.ArgumentParser()
+    parser.add_argument('filename', help='Location of CHIP-8 ROM')
+    args = parser.parse_args()
+    filename = args.filename
+    
     emu.load(filename)
     print("Debugging " + filename)
+    print("Press 'h' to see commands")
 
     debugger.repl()
 

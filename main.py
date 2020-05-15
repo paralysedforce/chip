@@ -24,7 +24,7 @@ def on_key_press(symbol, modifiers):
     try: 
         key_index = Chip.KEY_INPUTS[symbol]
         chip.key_inputs[key_index] = 1
-        print(key_index)
+        print(key_index, chip.key_inputs)
     except KeyError:
         pass
 

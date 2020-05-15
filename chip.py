@@ -7,13 +7,16 @@ import pdb
 import numpy as np
 from pyglet.window import key
 
-
 # Decorator to defer evaluation of instructions
 def instruction(func, *args, **kwargs):
     def wrapper(*args, **kwargs):
         def internal_wrapper():
             return func(*args, **kwargs)
-        internal_wrapper.__name__ = func.__name__[1:] +' '+ kwargs.get('mode', '')
+
+        internal_wrapper.__name__ = "{name}({mode})- {args}".format(
+                name = func.__name__[1:],
+                mode =  kwargs.get('mode', ''),
+                args = ",".join(hex(a) for a in args[1:] if a is not None))
 
         return internal_wrapper
 
@@ -82,9 +85,10 @@ class Chip(object):
         opcode = self.memory[self.pc] << 8
         opcode |= self.memory[self.pc + 1]
 
-
         if Chip.DEBUG:
             self._print_instruction()
+            print("Registers", self.registers)
+            print("Index", self.index)
             pdb.set_trace()
 
         self._process_opcode(opcode)
@@ -389,8 +393,6 @@ class Chip(object):
         key_index = self.registers[x]
         if not self.key_inputs[key_index]:
             self.pc += 2
-
-
 
     @instruction
     def _ld(self, src, dest, mode=None):
