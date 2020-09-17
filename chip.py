@@ -398,8 +398,10 @@ class Chip(object):
     def _ld(self, src, dest, mode=None):
         if mode == 'BYTE':
             self.registers[src] = dest
+
         elif mode == 'REGISTER':
             self.registers[src] = self.registers[dest]
+
         elif mode == 'INDEX':
             if src and not dest:
                 self.registers[src] = self.index
@@ -407,10 +409,16 @@ class Chip(object):
                 self.index = dest
             else:
                 raise ValueError('Invalid Instruction Mode')
+
         elif mode == 'DELAY':
-            self.registers[src] = self.delay_timer
+            if src is not None:
+                self.registers[src] = self.delay_timer
+            if dest is not None:
+                self.delay_timer = self.registers[dest]
+
         elif mode == 'SOUND':
             self.registers[src] = self.sound_timer
+
         elif mode == 'SPRITE':
             self.index = 5 * self.registers[dest]
 
