@@ -2,6 +2,7 @@ import numpy as np
 import pdb
 import argparse
 from chip import Chip
+from sys import maxsize
 import re
 
 class Debugger(object):
@@ -178,13 +179,17 @@ class Debugger(object):
         except IndexError:
             print("Invalid command")
 
+        except KeyboardInterrupt:
+            return
+
+
 
     def step(self):
         self.emu.cycle()
         self.emu._print_instruction()
 
 
-np.set_printoptions(threshold=np.nan)
+np.set_printoptions(threshold=maxsize)
 emu = Chip()
 debugger = Debugger(emu)
 
