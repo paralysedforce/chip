@@ -15,11 +15,15 @@ class Debugger(object):
         self.last_breakpoint = 0
 
     def set_breakpoint(self, line):
-        self.last_breakpoint += 1
-        self.breakpoints[self.last_breakpoint] = line
-        print("Breakpoint {num} set at line {line}".format(
-            num=self.last_breakpoint,
-            line=line))
+        try:
+            self.breakpoints[self.last_breakpoint] = int(line, 16)
+        except ValueError:
+            print("Invalid breakpoint not set")
+        else:
+            self.last_breakpoint += 1
+            print("Breakpoint {num} set at line {line}".format(
+                num=self.last_breakpoint,
+                line=line))
 
     def remove_breakpoint(self, i):
         if i in self.breakpoints:
@@ -97,7 +101,7 @@ class Debugger(object):
         if component == 'b':
             print("Breakpoints:")
             for i in self.breakpoints:
-                print("{num} - {line}".format(i, self.breakpoints[i]))
+                print("{0} - {1:#06x}".format(i, self.breakpoints[i]))
 
     def repl(self):
         while True:
